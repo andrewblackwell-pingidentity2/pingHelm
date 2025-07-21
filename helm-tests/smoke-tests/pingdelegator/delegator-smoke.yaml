@@ -1,0 +1,37 @@
+###############################################################################
+# Ping Identity Test - PingDelegator Smoke Test
+#
+#
+###############################################################################
+pingdelegator:
+  enabled: true
+  container:
+    resources:
+      requests:
+        cpu: 1
+        memory: 64Mi
+      limits:
+        cpu: 1
+        memory: 64Mi
+
+###############################################################################
+# Test Steps
+###############################################################################
+testFramework:
+  enabled: true
+  testConfigMaps:
+    # DEFAULTS (found in helm chart values.yaml)
+    # prefix: ping-devops-test-
+    # volumeMountPath: /var/run/
+    files:
+      - global-init-test.sh
+      - wait-for-url.sh
+
+  testSteps:
+    - name: 01-wait-for-pingdelegator
+      image: ${DEPS_REGISTRY}pingidentity/pingtoolkit:latest
+      command:
+        - /bin/sh
+        - /var/run/wait-for-url.sh
+        - https://${PD_DELEGATOR_PRIVATE_HOSTNAME}:${PD_DELEGATOR_PRIVATE_PORT_HTTPS}/
+        - "900"

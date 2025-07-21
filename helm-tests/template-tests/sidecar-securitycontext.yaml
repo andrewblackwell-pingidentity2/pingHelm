@@ -1,0 +1,127 @@
+# This test covers enabling a utility sidecar for a workload with a custom securityContext.
+
+### SECTION:PARAMETERS ###
+releaseName: sidecar-securitycontext
+# Set skipTest to true to make the script skip this test
+skipTest: false
+### SECTION:VALUES ###
+# Set typical Helm values here
+configMaps:
+  test-cm:
+    data:
+      script.sh: asdf
+
+pingdirectory:
+  cronjob:
+    enabled: true
+    spec:
+      schedule: "0 */6 * * *"
+      successfulJobsHistoryLimit: 0
+      failedJobsHistoryLimit: 1
+    args:
+      - /opt/in/script.sh
+  enabled: true
+  workload:
+    shareProcessNamespace: true
+  volumes:
+    - name: temp
+      emptyDir: {}
+    - name: test-cm
+      configMap:
+        name: test-cm
+  volumeMounts:
+    - name: temp
+      mountPath: /tmp
+
+  # Backups, restores, and other CLI tools should be run from the sidecar to prevent interfering
+  # with the main PingDirectory container process.
+  utilitySidecar:
+    enabled: true
+    # Set custom security context
+    securityContext:
+      allowPrivilegeEscalation: true
+      runAsGroup: 1234
+      runAsUser: 2345
+    volumes:
+      - name: test-cm
+        mountPath: /opt/in/script.sh
+        subPath: script.sh
+    env:
+      - name: ENV_TEST
+        value: "sidecar1"
+### SECTION:EXPECTED ###
+# Validate that the sidecar is configured correctly
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sidecar-securitycontext-pingdirectory
+spec:
+  template:
+    spec:
+      containers:
+        - name: pingdirectory
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+        - name: utility-sidecar
+          securityContext:
+            allowPrivilegeEscalation: true
+            runAsGroup: 1234
+            runAsUser: 2345
+          args:
+            - -f
+            - /dev/null
+          command:
+            - tail
+          env:
+          - name: ENV_TEST
+            value: sidecar1
+          resources:
+            requests:
+              cpu: "0"
+              memory: 128Mi
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            - mountPath: /opt/in/script.sh
+              name: test-cm
+              subPath: script.sh
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsUser: 9031
+      shareProcessNamespace: true
+      volumes:
+        - emptyDir: {}
+          name: temp
+        - configMap:
+            name: test-cm
+          name: test-cm
+---
+# Validate that the cronjob and corresponding RBAC objects are configured correctly
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sidecar-securitycontext-pingdirectory-cronjob
+spec:
+  schedule: 0 */6 * * *
+  successfulJobsHistoryLimit: 0
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - args:
+              - -c
+              - kubectl exec -ti sidecar-securitycontext-pingdirectory-0 --container utility-sidecar -- /opt/in/script.sh
+              command:
+              - sh
+              image: bitnami/kubectl:latest
+              name: sidecar-securitycontext-pingdirectory-cronjob
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                  - ALL
+          serviceAccount: sidecar-securitycontext-pingdirectory-internal-kubectl

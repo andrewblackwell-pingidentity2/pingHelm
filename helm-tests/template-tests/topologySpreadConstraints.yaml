@@ -1,0 +1,55 @@
+# This test covers including topologySpreadConstraints in your workload values.
+
+### SECTION:PARAMETERS ###
+# If the releaseName parameter is not set, then a default release name
+# matching the name of the file (without the extension) will be used.
+releaseName: topologytest
+# Set skipTest to true to make the script skip this test
+skipTest: false
+### SECTION:VALUES ###
+pingdataconsole:
+  enabled: true
+global:
+  workload:
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: node
+      whenUnsatisfiable: ScheduleAnyway
+    - maxSkew: 2
+      topologyKey: node2
+      whenUnsatisfiable: ScheduleAnyway
+    - maxSkew: 3
+      topologyKey: node3
+      whenUnsatisfiable: ScheduleAnyway
+### SECTION:EXPECTED ###
+# Validate that topologySpreadConstraints is set in the PDC Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: topologytest-pingdataconsole
+spec:
+  template:
+    spec:
+      topologySpreadConstraints:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/instance: topologytest
+            app.kubernetes.io/name: pingdataconsole
+        maxSkew: 1
+        topologyKey: node
+        whenUnsatisfiable: ScheduleAnyway
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/instance: topologytest
+            app.kubernetes.io/name: pingdataconsole
+        maxSkew: 2
+        topologyKey: node2
+        whenUnsatisfiable: ScheduleAnyway
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/instance: topologytest
+            app.kubernetes.io/name: pingdataconsole
+        maxSkew: 3
+        topologyKey: node3
+        whenUnsatisfiable: ScheduleAnyway
+---

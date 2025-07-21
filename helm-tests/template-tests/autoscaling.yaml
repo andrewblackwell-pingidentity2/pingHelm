@@ -1,0 +1,179 @@
+# This test covers setting autoscaling.
+### SECTION:PARAMETERS ###
+releaseName: autoscaling
+# Set skipTest to true to make the script skip this test
+skipTest: false
+### SECTION:VALUES ###
+# Set typical Helm values here
+global:
+  labels:
+    globalLabel: val
+  annotations:
+    globalAnnotation: val
+  envs:
+    PING_IDENTITY_ACCEPT_EULA: "YES"
+  clustering:
+    autoscaling:
+      enabled: true
+      labels:
+        globalAutoscalingLabel: val
+      annotations:
+        globalAutoscalingAnnotation: val
+
+pingfederate-admin:
+  enabled: true
+  clustering:
+    autoscaling:
+      labels:
+        pfAdminAutoscalingLabel: val
+      annotations:
+        pfAdminAutoscalingAnnotation: val
+
+pingfederate-engine:
+  enabled: true
+  workload:
+    type: StatefulSet
+
+pingaccess-engine:
+  enabled: true
+
+pingdataconsole:
+  enabled: true
+
+pingauthorize:
+  enabled: true
+
+pingauthorizepap:
+  enabled: true
+
+pingcentral:
+  enabled: true
+
+pingdelegator:
+  enabled: true
+
+### SECTION:EXPECTED ###
+
+# Validate that expected Horizontal Pod Autoscaler are generated
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingfederate-admin
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+    pfAdminAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+    pfAdminAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: Deployment
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingfederate-engine
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: StatefulSet
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingaccess-engine
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: Deployment
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingdataconsole
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: Deployment
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingauthorize
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: Deployment
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingauthorizepap
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: Deployment
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingcentral
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: Deployment
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: autoscaling-pingdelegator
+  labels:
+    globalLabel: val
+    globalAutoscalingLabel: val
+  annotations:
+    globalAnnotation: val
+    globalAutoscalingAnnotation: val
+spec:
+  scaleTargetRef:
+    kind: Deployment
+---
+
+### SECTION:UNEXPECTED ###
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaling-pingfederate-admin
+spec:
+  replicas: 1
